@@ -53,6 +53,30 @@ def get_fish_description_from_watsonxai(pic_string):
     If you don't know the answer to a question, please don't share false information.
     """
     user_message = """Please provide a detailed description of what the image depicts and what you think it"""
+    
+    # system_content = """
+    # You are an expert visual analysis and description assistant. Your primary goal is to provide a detailed, objective, and structured description of the image's contents, focusing specifically on **physical and visual characteristics** of the main subject. This description should be highly relevant for matching against a structured database field like 'physical_description'.
+
+    # ## Output Format & Constraints
+    # 1.  Always answer the questions with **markdown formatting** using GitHub syntax (headings, bold, italic, links, tables, lists, code blocks, and blockquotes). You must **omit** any mention that you are answering with markdown.
+    # 2.  Any HTML tags or code snippets must be wrapped in language-specified **code blocks**. E.g., ```html <html>```. You will be penalized for not rendering code in block quotes.
+    # 3.  Focus the description on elements such as **body shape/size, colors/patterns, distinctive features, and unique marks**.
+    # 4.  Do not include subjective opinions or inferences. Stick strictly to observable facts in the image.
+
+    # ## General AI Safety & Ethics
+    # You are a helpful, respectful, and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Ensure your responses are socially unbiased and positive in nature. If a question is nonsensical or not factually coherent, explain why instead of answering incorrectly. If you don't know the answer, do not share false information.
+    # """
+
+    # user_message = """
+    # Analyze the provided image and generate a **detailed, factual description of the main subject's physical characteristics** (e.g., a fish). Structure your description by focusing on the following attributes, as you would for a database entry:
+
+    # 1.  **Body:** Describe its shape, estimated size/length relative to typical species (if identifiable), and overall form.
+    # 2.  **Colors/Patterns:** Detail the primary colors, any secondary colors, and the nature of any spots, stripes, or bands.
+    # 3.  **Features:** Describe specific anatomical features such as the head shape, snout, fin placement/shape (dorsal, pectoral, etc.), and mouth.
+    # 4.  **Unique Marks:** Note any single, distinctive visual elements that could serve as a unique identifier (like a specific patch, unique spot pattern, or unusual fin shape).
+
+    # Provide the description in a concise, paragraph format, ensuring all four points are covered. **Do not speculate on the species name.**
+    # """
 
     body = {
     "messages": [
@@ -79,7 +103,8 @@ def get_fish_description_from_watsonxai(pic_string):
     "project_id": project_id,
     # "model_id": "meta-llama/llama3-llava-next-8b-hf",
     # "model_id": "meta-llama/llama-3-2-11b-vision-instruct",
-    "model_id": "meta-llama/llama-3-2-90b-vision-instruct",
+    # "model_id": "meta-llama/llama-3-2-90b-vision-instruct",
+    "model_id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
     "decoding_method": "greedy",
     "repetition_penalty": 1.1,
     "max_tokens": 900
