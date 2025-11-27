@@ -219,6 +219,83 @@ def search_with_scientific_name():
             "message": f"Service error: {str(e)}"
         }), 503
 
+        
+@app.route("/identify_and_search", methods=["POST"])
+def identify_and_search():
+    """
+    1. Fetches an image (COS path)
+    2. Calls WatsonX to generate a descriptive caption.
+    3. Uses the caption to perform a semantic vector search in Elasticsearch.
+    4. Returns the search results.
+    """
+    try:
+        data = request.get_json()
+        image = data.get("image", "")
+        if not image:
+            app.logger.error("No image path provided in request for /identify_and_search")
+            return jsonify({"error": "No image path (COS Key) provided"}), 400
+
+        app.logger.info(f"Starting 2-step process for image: {image}")
+
+        # --- STEP 1: Fetch Image and Encode (Code copied from /image_captioning) ---
+        try:
+            app.logger.info("Loading COS credentials and fetching image.")
+            api_key = os.environ.get('IBM_COS_API_KEY')
+            resource_instance_id = os.environ.get('IBM_COS_RESOURCE_INSTANCE_ID')
+            endpoint_url = os.environ.get('IBM_COS_ENDPOINT')
+            cos = ibm_boto3.client(
+                's3',
+                ibm_api_key_id=api_key,
+                ibm_service_instance_id=resource_instance_id,
+                config=Config(signature_version='oauth'),
+                endpoint_url=endpoint_url
+            )
+            response = cos.get_object(Bucket='fish-image-bucket', Key=image)
+            image_bytes = response['Body'].read()
+            pic_string = base64.b64encode(image_bytes).decode('utf-8')
+        except Exception as cos_e:
+            traceback.print_exc()
+            app.logger.error(f"COS/Base64 error in identify_and_search: {cos_e}")
+            return jsonify(fallback_response("identify_and_search (Image Load)", f"Image load error: {cos_e}")), 503
+
+        # --- STEP 2: WatsonX Image Captioning (Call get_fish_description_from_watsonxai) ---
+        try:
+            app.logger.info("Calling WatsonX for image captioning (Pass 1)")
+            # Note: Using the simple captioning function first
+            caption = get_fish_description_from_watsonxai(pic_string)
+            app.logger.info(f"Generated Caption: {caption[:100]}...")
+            if not caption:
+                return jsonify({"error": "AI failed to generate a caption"}), 500
+        except Exception as ai_e:
+            traceback.print_exc()
+            app.logger.error(f"WatsonX Captioning error in identify_and_search: {ai_e}")
+            return jsonify(fallback_response("identify_and_search (WatsonX Captioning)", f"AI error: {ai_e}")), 503
+
+        # --- STEP 3: Semantic Search using Caption (Code copied from /search) ---
+        try:
+            app.logger.info("Starting Elasticsearch vector search with the generated caption.")
+            text_input = caption
+            caption_embedding = emb.embed_text(text_input)
+            hits = esq.search_embedding(index_name=index_name, embedding_field='physical_description_embedding', query_vector=caption_embedding, size=5)
+            # top_n_fish = return_top_n_fish(hits, n=5) # Use the simpler return function for consistency
+            top_n_fish = return_top_n_fish_simple(hits, n=5)
+            
+            # --- FINAL RESPONSE ---
+            return jsonify({
+                "input_image": image,
+                "ai_generated_caption": caption,
+                "elasticsearch_results": top_n_fish
+            })
+        except Exception as es_e:
+            traceback.print_exc()
+            app.logger.error(f"Elasticsearch search error in identify_and_search: {es_e}")
+            return jsonify(fallback_response("identify_and_search (Elasticsearch Search)", f"Search error: {es_e}")), 503
+
+    except Exception as e:
+        traceback.print_exc()
+        app.logger.error(f"Unknown error in /identify_and_search: {e}")
+        return jsonify(fallback_response("identify_and_search", str(e))), 503
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080, debug=True)
