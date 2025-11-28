@@ -12,6 +12,7 @@ import io
 import logging
 import base64
 import traceback
+from fish_services import get_watsonx_token, identify_fish_candidates
 
 
 load_dotenv()
@@ -21,6 +22,13 @@ es_password = os.environ["es_password"]
 index_name = 'fish_index_v4'    
 esq = ElasticsearchQuery(es_endpoint, es_username, es_password)
 emb = EmbeddingService('watsonx')
+
+# env
+watsonx_api_key = os.getenv("WATSONX_APIKEY", None)
+ibm_cloud_url = os.getenv("IBM_CLOUD_URL", None)
+project_id = os.getenv("PROJECT_ID", None)
+ibm_cloud_iam_url = os.getenv("IAM_IBM_CLOUD_URL", None)
+chat_url = os.getenv("IBM_WATSONX_AI_INFERENCE_URL", None)
 
 app = Flask(__name__)
 
@@ -219,7 +227,10 @@ def search_with_scientific_name():
             "message": f"Service error: {str(e)}"
         }), 503
 
-        
+
+
+### Below this one
+### /identify_and_search is endpoint using to validate accuracy of datad
 @app.route("/identify_and_search", methods=["POST"])
 def identify_and_search():
     """
@@ -296,6 +307,71 @@ def identify_and_search():
         app.logger.error(f"Unknown error in /identify_and_search: {e}")
         return jsonify(fallback_response("identify_and_search", str(e))), 503
 
+# --- NEW ROUTE (Integrated from previous turn) ---
+@app.route("/search_possible_fish", methods=["POST"])
+def search_possible_fish():
+    """
+    Input: JSON {"image": "user-upload/filename.jpg"}
+    Output: Full JSON from AI (contains top_candidates, scores, reasons)
+    """
+    try:
+        # 1. Parse JSON Input
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON body"}), 400
+            
+        image_key = data.get("image", "")
+        if not image_key:
+            return jsonify({"error": "No 'image' key provided in JSON"}), 400
+
+        app.logger.info(f"Processing image search for key: {image_key}")
+
+        # 2. Fetch Image from IBM COS
+        try:
+            api_key = os.environ.get('IBM_COS_API_KEY')
+            resource_instance_id = os.environ.get('IBM_COS_RESOURCE_INSTANCE_ID')
+            endpoint_url = os.environ.get('IBM_COS_ENDPOINT')
+            bucket_name = 'fish-image-bucket' 
+
+            cos = ibm_boto3.client(
+                's3',
+                ibm_api_key_id=api_key,
+                ibm_service_instance_id=resource_instance_id,
+                config=Config(signature_version='oauth'),
+                endpoint_url=endpoint_url
+            )
+            
+            response = cos.get_object(Bucket=bucket_name, Key=image_key)
+            image_bytes = response['Body'].read()
+            pic_base64 = base64.b64encode(image_bytes).decode("utf-8")
+            
+        except Exception as cos_error:
+            app.logger.error(f"COS Error: {cos_error}")
+            return jsonify({"error": f"Failed to fetch image: {str(cos_error)}"}), 500
+
+        # 3. Get Token & Call AI (Using fish_service)
+        access_token = get_watsonx_token(watsonx_api_key, ibm_cloud_iam_url)
+        if not access_token:
+            app.logger.error("Authentication failed: Could not get WatsonX token")
+            return jsonify({"error": "Authentication failed"}), 500
+
+        # เรียก AI
+        ai_result = identify_fish_candidates(pic_base64, access_token, project_id, chat_url)
+
+        print(ai_result)
+
+        # เช็คว่า AI ตอบกลับมาจริงไหม
+        if not ai_result:
+            app.logger.error("AI returned None or failed to parse JSON")
+            return jsonify({"error": "AI could not identify fish"}), 500
+
+        # Return ทั้งก้อน (Full Object)
+        return jsonify(ai_result), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        app.logger.error(f"Unhandled Error: {str(e)}")
+        return jsonify(fallback_response("search_possible_fish", str(e))), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080, debug=True)
