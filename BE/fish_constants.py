@@ -3,7 +3,7 @@ import os
 
 # --- Configuration ---
 MODEL_ID = "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
-CSV_FILENAME = "Marine_Fish_Species_Formatted_updated.csv"
+CSV_FILENAME = "Marine_Fish_Possible_Output.csv"
 
 def load_fish_data_from_csv():
     """
