@@ -140,34 +140,41 @@ def get_json_generated_image_details(pic_string):
     access_token=decoded_json["access_token"]
 
     system_content = """
-    You are an AI assistant designed to analyze images and generate structured JSON responses.
-    Your task is to identify whether the image contains a fish and, if so, provide detailed information about it.
+    You are an expert Ichthyologist and AI assistant specializing in marine biology and taxonomy, particularly species found in Thailand. 
+    
+    Your task is to analyze the input image and generate a strictly formatted JSON response based on your internal knowledge base.
 
-    The JSON response must include:
-    - `image_contains_fish`: (true/false) - Set to true if a fish is present in the image, otherwise false.
-    - `fish_details`: An object containing:
-        - `fish_name`: The common name of the fish species, written in Thai.
-        - `scientific_name`: The scientific (Latin) name of the fish species, written in English.
-        - `order_name`: The taxonomic order to which the fish belongs, written in English.
-        - `physical_description`: A detailed description of the fish's appearance, including size, shape, color, and any unique markings, written in Thai.
-        - `habitat`: A description of the typical habitat or environment where this fish is found in Thailand, written in Thai.
+    --- STEP 1: VALIDATION ---
+    Analyze the image to determine if it contains a VALID, LIVING, or FRESH biological specimen of a fish.
+    
+    You must set `image_contains_fish` to `false` if the image shows:
+    1. Cooked food (fried, grilled, steamed, or plated dishes).
+    2. Processed fish (fillets, heads removed, dried fish).
+    3. Non-realistic images (cartoons, drawings).
+    4. Poor visibility (too blurry to identify).
 
-    If the image does not contain a fish, set `image_contains_fish` to `false` and `fish_details` to an empty object.
-    Ensure the response is accurate, concise, and formatted as valid JSON and only JSON and nothing else.
+    --- STEP 2: GENERATION ---
+    If the image is valid, generate the details using the schema below.
+
+    --- OUTPUT SCHEMA ---
+    Return ONLY a raw JSON object (no markdown formatting, no ```json fences).
+    
+    {
+        "image_contains_fish": <boolean>,
+        "fish_details": {
+            "fish_name": "<string: Common name in Englsih)>",
+            "scientific_name": "<string: Scientific Latin name in English>",
+            "order_name": "<string: Taxonomic Order in English>",
+            "physical_description": "<string: A comprehensive and detailed physical description (approx. 3-5 sentences). Must cover body shape, scale patterns, specific coloration (including gradients or spots), fin characteristics (dorsal/pectoral shapes), and distinct anatomical features like mouth structure or spines.>",
+            "habitat": "<string: A detailed description of the natural habitat. Include specific environments (e.g., coral reefs, mangroves, sandy bottoms), preferred water depth, water type (freshwater/brackish/marine), and behavior (solitary vs. schooling).>"
+        }
+    }
+
+    If `image_contains_fish` is false, `fish_details` must be an empty object {}.
     """
     
     user_message = """
-    Generate a JSON object describing the fish in the image. The JSON should include:
-    - `image_contains_fish`: (true/false) - Indicates whether the image contains a fish.
-    - `fish_details`: An object containing:
-        - `fish_name`: The name of the fish. (in Thai)
-        - `scientific_name`: The scientific name of the fish. (in English)
-        - `order_name`: The order name of the fish. (in English)
-        - `physical_description`: A detailed physical description of the fish. (in Thai)
-        - `habitat`: The habitat where the fish is typically found. (in Thai)
-
-    If the image does not contain a fish, set `image_contains_fish` to `false` and `fish_details` to an empty object.
-    Ensure the response is formatted as valid JSON and only JSON and nothing else.
+    Analyze the provided image. Identify the species and return the detailed JSON object as defined in your system instructions.
     """
 
     body = {
@@ -195,7 +202,8 @@ def get_json_generated_image_details(pic_string):
     "project_id": project_id,
     # "model_id": "meta-llama/llama3-llava-next-8b-hf",
     # "model_id": "meta-llama/llama-3-2-11b-vision-instruct",
-    "model_id": "meta-llama/llama-3-2-90b-vision-instruct",
+    # "model_id": "meta-llama/llama-3-2-90b-vision-instruct",
+    "model_id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
     "decoding_method": "greedy",
     "repetition_penalty": 1.1,
     "max_tokens": 900
