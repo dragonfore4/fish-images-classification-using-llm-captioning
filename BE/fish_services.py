@@ -1,10 +1,13 @@
 # fish_service.py
+import base64
 import json
 import re
 import requests
 import http.client
 from typing import Dict, Any, Optional
 from fish_constants import SYSTEM_CONTENT_SINGLE, MODEL_ID
+from google import genai
+from google.genai import types
 
 def get_watsonx_token(api_key: str, iam_url: str) -> Optional[str]:
     try:
@@ -76,4 +79,42 @@ def identify_fish_candidates(pic_string: str, access_token: str, project_id: str
         return None
     except Exception as e:
         print(f"AI Request Error: {e}")
+        return None
+
+def identify_fish_candidates_gemini(client: genai.Client, pic_string: str) -> Optional[Dict[str, Any]]:
+    try:
+        # Decode base64 เป็น bytes
+        try:
+            image_bytes = base64.b64decode(pic_string)
+        except Exception as e:
+            print(f"Error decoding base64: {e}")
+            return None
+
+        # Config Gemini
+        config = types.GenerateContentConfig(
+            response_mime_type="application/json",
+            temperature=0.1,
+            system_instruction=SYSTEM_CONTENT_SINGLE, # ใช้ Prompt ตัวเดียวกัน
+            max_output_tokens=4096
+        )
+
+        # Call API
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                types.Part.from_bytes(
+                  data=image_bytes,
+                  mime_type="image/jpeg"
+                ),
+                'Identify the fish in this image'
+            ],
+            config=config
+        )
+        
+        if response.text:
+            return json.loads(response.text)
+        return None
+
+    except Exception as e:
+        print(f"Gemini Error: {e}")
         return None
