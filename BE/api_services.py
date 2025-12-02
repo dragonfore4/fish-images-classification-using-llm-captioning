@@ -373,7 +373,7 @@ def search_possible_fish():
           ai_result = identify_fish_candidates(pic_base64, access_token, project_id, chat_url)
           
 
-        print(ai_result)
+        print("this is ai_result",ai_result)
 
         # เช็คว่า AI ตอบกลับมาจริงไหม
         if not ai_result:
@@ -395,7 +395,7 @@ def change_use_gemini():
     app.logger.info(f"USE_GEMINI set to: {USE_GEMINI}")
     return jsonify({"USE_GEMINI": USE_GEMINI}), 200
 
-@app.route("/is_gemini", methods=["GET"])
+@app.route("/isGemini", methods=["GET"])
 def is_gemini():
     global USE_GEMINI
     return jsonify({"USE_GEMINI": USE_GEMINI}), 200
