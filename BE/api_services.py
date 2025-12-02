@@ -12,7 +12,8 @@ import io
 import logging
 import base64
 import traceback
-from fish_services import get_watsonx_token, identify_fish_candidates
+from fish_services import get_watsonx_token, identify_fish_candidates, identify_fish_candidates_gemini
+from google import genai
 
 
 load_dotenv()
@@ -22,6 +23,13 @@ es_password = os.environ["es_password"]
 index_name = 'fish_index_v4'    
 esq = ElasticsearchQuery(es_endpoint, es_username, es_password)
 emb = EmbeddingService('watsonx')
+
+global USE_GEMINI
+USE_GEMINI = False 
+
+client = genai.Client(
+  api_key=os.getenv("GEMINI_API_KEY")
+)
 
 # env
 watsonx_api_key = os.getenv("WATSONX_APIKEY", None)
@@ -356,7 +364,14 @@ def search_possible_fish():
             return jsonify({"error": "Authentication failed"}), 500
 
         # เรียก AI
-        ai_result = identify_fish_candidates(pic_base64, access_token, project_id, chat_url)
+        ai_result = None
+
+        if USE_GEMINI:
+          print("Using Gemini model for identification")
+          ai_result = identify_fish_candidates_gemini(client, pic_base64)
+        else:
+          ai_result = identify_fish_candidates(pic_base64, access_token, project_id, chat_url)
+          
 
         print(ai_result)
 
@@ -373,5 +388,16 @@ def search_possible_fish():
         app.logger.error(f"Unhandled Error: {str(e)}")
         return jsonify(fallback_response("search_possible_fish", str(e))), 500
 
+@app.route("/changeModel", methods=["GET"])
+def change_use_gemini():
+    global USE_GEMINI
+    USE_GEMINI = not USE_GEMINI
+    app.logger.info(f"USE_GEMINI set to: {USE_GEMINI}")
+    return jsonify({"USE_GEMINI": USE_GEMINI}), 200
+
+@app.route("/is_gemini", methods=["GET"])
+def is_gemini():
+    global USE_GEMINI
+    return jsonify({"USE_GEMINI": USE_GEMINI}), 200
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080, debug=True)
