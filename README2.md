@@ -108,3 +108,23 @@ Adding new fish entries (append to CSV and re-ingest)
   - If you only need a few quick entries for testing, you can directly add them to the index using `INGESTION/elasticsearch_manager.py` utilities (e.g., via a small script that constructs documents and calls `bulk(...)`). However, using the CSV + ingestion flow ensures consistent fields and embeddings.
   - After ingesting, you can verify presence with `ElasticsearchManager.get_index_info(index_name)` or by using `BE/main.py` example flow to embed a test caption and run `esq.search_embedding(...)`.
 
+
+---
+
+**GET /isGemini**
+  - **Method:** GET
+  - **Purpose:** Check whether the service is currently using the Gemini model for `/search_possible_fish`.
+  - **Request:** none
+  - **Behavior:** Returns the current toggle state from the in-process flag `USE_GEMINI`.
+  - **Response:** `200 OK` JSON: `{"USE_GEMINI": true|false}`
+  - **Notes:** This only affects the model used inside `/search_possible_fish`. Other endpoints continue to use Watsonx.
+
+**GET /changeModel**
+  - **Method:** GET
+  - **Purpose:** Toggle the model used by `/search_possible_fish` between Watsonx (default) and Gemini.
+  - **Request:** none
+  - **Behavior:** Flips the global in-memory flag `USE_GEMINI`. If it was `false` (Watsonx), it becomes `true` (Gemini), and vice versa.
+  - **Response:** `200 OK` JSON: `{"USE_GEMINI": true|false}` reflecting the new state after the toggle.
+  - **Notes:** This toggle is process-local and non-persistent. It resets on app restart. Requires `GEMINI_API_KEY` to be set in the environment for Gemini to work.
+
+---
