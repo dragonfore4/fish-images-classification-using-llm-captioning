@@ -137,7 +137,7 @@ Elasticsearch credentials can be accessed within the Database for Elasticsearch 
 --
 
 ### For Gemini API Key 
-you can retrieve Gemini Api Key from this [Link]("https://aistudio.google.com/")
+you can retrieve Gemini Api Key from this [Link](https://aistudio.google.com/)
 
 ## Example .env File
 
