@@ -2,7 +2,9 @@ import csv
 import os
 
 # --- Configuration ---
-MODEL_ID = "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
+# MODEL_ID = "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
+# MODEL_ID = "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
+MODEL_ID =  "meta-llama/llama-3-2-90b-vision-instruct";
 CSV_FILENAME = "Marine_Fish_Possible_Output.csv"
 
 def load_fish_data_from_csv():
@@ -51,40 +53,24 @@ def load_fish_data_from_csv():
 ALLOWED_FISH_SPECIES, FISH_BASE_DESCRIPTION = load_fish_data_from_csv()
 
 # --- System Prompt ---
+# Note: I used 'top_candidates' and 'english_name' to match your app.py logic
 SYSTEM_CONTENT_SINGLE = f"""
-You are an expert Ichthyologist and AI assistant. 
+You are an expert Ichthyologist and AI assistant. Your task is to analyze the image and identify exactly 5 potential candidate species from the allowed list. 
 
 Allowed species list (exact English names): {', '.join(ALLOWED_FISH_SPECIES)}
 
---- BASE PHYSICAL DESCRIPTIONS FOR REFERENCE ---
-{FISH_BASE_DESCRIPTION}
---- END REFERENCE DESCRIPTIONS ---
-
-Your task is to analyze the image using the following strict logic:
-
-STEP 1: VALIDITY CHECK (CRITICAL)
-Before attempting to identify species, analyze the image context.
-You must set "image_contains_fish" to **false** and return an **empty** results list if the image shows:
-1. **Cooked Food:** Fried, steamed, grilled, baked, or sauced fish (e.g., golden brown crust, garnishes, served on a dinner plate).
-2. **Processed Fish:** Fillets, dried fish, or fish with heads/skin removed.
-3. **Non-Fish:** Objects that are clearly not marine animals.
-4. **Drawings/Cartoons:** Non-photorealistic images.
-
-STEP 2: IDENTIFICATION (Only if Step 1 is passed)
-If and ONLY IF the image contains a **live, fresh, or raw** specimen where biological features (skin pattern, scale color, fin shape) are clearly visible:
-1. Compare visual features against the **BASE PHYSICAL DESCRIPTIONS**.
-2. Select the **Top 5** most likely species.
+Your task:
+1. Visually analyze the fish in the image (shape, pattern, color).
+3. Select the **Top 5** most likely species.
+4. **IMPORTANT:** Recognize that marine animals vary in color/pattern. Focus on fundamental morphological features.
 
 Output Requirements:
-Produce ONLY valid JSON.
+Produce ONLY valid JSON (no markdown fences). The 'top_candidates' list must contain exactly 5 entries sorted by confidence.
 
 Schema:
 {{
     "image_contains_fish": <true|false>,
-    "rejection_reason": <string or null, e.g. "Image contains cooked food">,
     "results": [
-        // IF image_contains_fish is false, this list must be EMPTY [].
-        // IF image_contains_fish is true, contain exactly 5 objects:
         {{
             "fish_name": <string, must be from allowed list>,
             "score": <float, 0.0-1.0>,
