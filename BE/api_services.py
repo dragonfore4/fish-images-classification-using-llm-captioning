@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from watsonx_captioning import convert_image_to_base64, get_fish_description_from_watsonxai, get_json_generated_image_details
+from watsonx_captioning import convert_image_to_base64, get_fish_description_from_watsonxai, get_json_generated_image_details, get_json_generated_image_details_gemini, get_json_generated_image_details_groq
 from elasticsearch_query import ElasticsearchQuery
 from embedding_service import EmbeddingService
 from function import return_top_n_fish, return_top_n_fish_simple, return_fish_info
@@ -10,9 +10,10 @@ import ibm_boto3
 from ibm_botocore.client import Config
 import io
 import logging
+from groq import Groq
 import base64
 import traceback
-from fish_services import get_watsonx_token, identify_fish_candidates, identify_fish_candidates_gemini
+from fish_services import get_watsonx_token, identify_fish_candidates, identify_fish_candidates_gemini, identify_fish_candidates_gemini2, identify_fish_candidates_gemini2, identify_fish_candidates_groq
 from google import genai
 
 
@@ -30,6 +31,8 @@ USE_GEMINI = False
 client = genai.Client(
   api_key=os.getenv("GEMINI_API_KEY")
 )
+
+groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 # env
 watsonx_api_key = os.getenv("WATSONX_APIKEY", None)
@@ -169,13 +172,22 @@ def image_identification():
 
         # WatsonX call block
         try:
-            app.logger.info("Calling WatsonX for image captioning")
-            json_result = get_json_generated_image_details(pic_string)
+            # json_result = get_json_generated_image_details(pic_string)
+            if USE_GEMINI:
+              app.logger.info("Calling Gemini for image captioning")
+              json_result = get_json_generated_image_details_gemini(client, pic_string)
+            else:
+              app.logger.info("Calling WatsonX for image captioning")
+              json_result = get_json_generated_image_details_groq(groq_client, pic_string)
         except Exception as ai_e:
             traceback.print_exc()
             app.logger.error(f"WatsonX error: {ai_e}")
             return jsonify(fallback_response("image_captioning", f"WatsonX error: {ai_e}")), 503
 
+        if not json_result:
+            return jsonify({"error": "AI could not identify fish (Returned None)"}), 500
+
+        print("this is json_result",json_result)
         return json_result
     except Exception as e:
         traceback.print_exc()
@@ -368,9 +380,10 @@ def search_possible_fish():
 
         if USE_GEMINI:
           print("Using Gemini model for identification")
-          ai_result = identify_fish_candidates_gemini(client, pic_base64)
+          ai_result = identify_fish_candidates_gemini2(client, pic_base64)
         else:
-          ai_result = identify_fish_candidates(pic_base64, access_token, project_id, chat_url)
+          # ai_result = identify_fish_candidates(pic_base64, access_token, project_id, chat_url)
+          ai_result = identify_fish_candidates_groq(groq_client, pic_base64)
           
 
         print("this is ai_result",ai_result)
