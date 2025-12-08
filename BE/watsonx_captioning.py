@@ -277,8 +277,8 @@ def get_json_generated_image_details_groq(groq_client: Groq ,pic_string: str):
             "fish_name": "<string: Common name in English)>",
             "scientific_name": "<string: Scientific Latin name in English>",
             "order_name": "<string: Taxonomic Order in English>",
-            "physical_description": "<string: A comprehensive and detailed physical description (approx. 3-5 sentences). Must cover body shape, scale patterns, specific coloration (including gradients or spots), fin characteristics (dorsal/pectoral shapes), and distinct anatomical features like mouth structure or spines.>",
-            "habitat": "<string: A detailed description of the natural habitat. Include specific environments (e.g., coral reefs, mangroves, sandy bottoms), preferred water depth, water type (freshwater/brackish/marine), and behavior (solitary vs. schooling).>"
+            "physical_description": "<string: A comprehensive and detailed physical description (approx. 3-5 sentences). Must cover body shape, scale patterns, specific coloration (including gradients or spots), fin characteristics (dorsal/pectoral shapes), and distinct anatomical features like mouth structure or spines IN THAI LANGUAGE.>",
+            "habitat": "<string: A detailed description of the natural habitat. Include specific environments (e.g., coral reefs, mangroves, sandy bottoms), preferred water depth, water type (freshwater/brackish/marine), and behavior (solitary vs. schooling) IN THAI LANGUAGE.>"
         }
     }
 
