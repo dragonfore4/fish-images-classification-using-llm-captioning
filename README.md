@@ -168,6 +168,7 @@ CE_API_BASE_URL=https://api.jp-tok.codeengine.cloud.ibm.com
 CE_REGION=jp-tok
 CE_PROJECT_ID=your-project-guid-here
 GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
+GROQ_API_KEY=<YOUR_GROQ_API_KEY>
 ```
 
 ## Testing Your Configuration
