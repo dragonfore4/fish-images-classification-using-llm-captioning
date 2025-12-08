@@ -2,8 +2,8 @@ import csv
 import os
 
 # --- Configuration ---
-# MODEL_ID = "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
-MODEL_ID =  "meta-llama/llama-3-2-90b-vision-instruct";
+MODEL_ID = "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
+# MODEL_ID =  "meta-llama/llama-3-2-90b-vision-instruct";
 CSV_FILENAME = "Marine_Fish_Possible_Output.csv"
 
 def load_fish_data_from_csv():
